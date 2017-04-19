@@ -1,0 +1,26 @@
+package pigudf;
+import java.io.IOException;
+import org.apache.pig.FilterFunc;
+import org.apache.pig.data.Tuple;
+
+
+public class GreaterThan80 extends FilterFunc{
+	public Boolean exec(Tuple input) throws IOException{
+		try{
+			int objective = (int) input.get(0));
+			int perf = (int) input.get(1));
+			
+			if (perf/objective>=0.80)
+			{
+				return true;
+			}
+			else {
+				return false;
+			}
+		}
+		catch (Exception e){
+			throw new IOException(e);
+		}
+	}
+
+}

@@ -1,0 +1,86 @@
+PROBLEM STATEMENT 1:
+
+Step 1:
+flume-ng agent -n agent1 -f filecopy.conf
+
+Step2:
+Register /home/acadgild/pig/piggybank.jar
+
+Step3:
+Define XPATH org.apache.pig.piggybank.evaluation.xml.XPath();
+
+Step 4:
+ A = LOAD 'hdfs://localhost:9000/flume_import/StatewiseDistrictwiserow.xml' using org.apache.pig.piggybank.storage.XMLLoader('row') as (x:chararray);
+
+Step 5:
+ B = Foreach A generate XPATH(x, 'row/State_Name') as State, XPATH(x, 'row/District_Name') as District, XPATH(x, 'row/Project_Objectives_IHHL_BPL') as ObjIHHLBPL, XPATH(x, 'row/Project_Objectives_IHHL_APL') as ObjIHHLAPL, XPATH(x, 'row/Project_Objectives_IHHL_TOTAL') as ObjIHHLTotal,
+>>  XPATH(x, 'row/Project_Objectives_SCW') as ProjectObjectiveSCW,
+>> XPATH(x, 'row/Project_Objectives_School_Toilets') as ProjectObjectiveSchoolToilet,
+>> XPATH(x, 'row/Project_Objectives_Anganwadi_Toilets') as ProjectObjectivesAnganwadiToilets,
+>> XPATH(x, 'row/Project_Objectives_RSM') as ProjectObjectiveRSM,
+>> XPATH(x, 'row/Project_Objectives_PC') as ProjectObjectivePC,
+>> XPATH(x, 'row/Project_Performance-IHHL_BPL') as ProjectPerformanceIHHLBPL,
+>> XPATH(x, 'row/Project_Performance-IHHL_APL') as ProjectPerformanceIHHLAPL,
+>> XPATH(x, 'row/Project_Performance-IHHL_TOTAL') as ProjectPerformanceIHHLTOTAL,
+>> XPATH(x, 'row/Project_Performance-SCW') as ProjectPerformanceSCW,
+>> XPATH(x, 'row/Project_Performance-School_Toilets') as ProjectPerformanceSchoolToilets,
+>> XPATH(x, 'row/Project_Performance-Anganwadi_Toilets') as ProjectPerformanceAnganwadiToilets,
+>> XPATH(x, 'row/Project_Performance-RSM') as ProjectPerformanceRSM,
+>> XPATH(x, 'row/Project_Performance-PC') as ProjectPerformancePC;
+
+Step6:
+
+filter_B = FILTER B by (int)ProjectPerformanceIHHLBPL/(int)ObjIHHLBPL >= 1;
+
+Step 7:
+
+store filter_B into 'myoutput' using PigStorage(',');
+
+Step 8:
+Moving from local to hdfs
+hadoop fs -put /home/acadgild/myoutput/part-m-00000 /myoutput;
+
+Step 9:
+create database sqoopDB;
+
+use sqoopDB;
+
+Creating table:
+
+create table StatePerformance ( State VARCHAR(20), District VARCHAR(20), Obj_BPL VARCHAR(20), Obj_APL VARCHAR(20), Obj_Total VARCHAR(20), Obj_SCW VARCHAR(20), Obj_School_toilets VARCHAR(20), Obj_Anganwadi_toilets VARCHAR(20), Obj_RSM VARCHAR(20), Obj_PC VARCHAR(20), Perf_BPL VARCHAR(20), Perf_APL VARCHAR(20), Perf_Total Varchar(20), Perf_SCW VARCHAR(20), Perf_School_toilets VARCHAR(20), Perf_Anganwadi_toilets VARCHAR(20), Perf_RSM VARCHAR(20), Perf_PC VARCHAR(20));
+
+Step 10:
+sqoop export --connect jdbc:mysql://localhost/sqoopDB --username 'root' -P --table 'StatePerformance' --export-dir 'hdfs://localhost:9000/myoutput/part-m-00000'
+
+
+
+PROBLEM STATEMENT 2:
+UDF is written in separate file
+Step1:
+Register '/home/acadgild/pig/greater.jar';
+
+Step2:
+DEFINE filterRec pigudf.GreaterThan80;
+
+Step3:
+C = FILTER B by filterRec(ObjIHHLBPL,ProjectPerformanceIHHLBPL);
+
+Step 4:
+Dump C;
+
+Step 5:
+store C into 'myoutput' using PigStorage(',');
+>hadoop fs -rmdir /myoutput
+Moving from local to hdfs
+hadoop fs -put /home/acadgild/myoutput/part-m-00000 /myoutput;
+
+Step 6:
+in mysql:
+use sqoopDB;
+
+Step 7:
+create table DistrictMoreThan80 ( State VARCHAR(20), District VARCHAR(20), Obj_BPL VARCHAR(20), Obj_APL VARCHAR(20), Obj_Total VARCHAR(20), Obj_SCW VARCHAR(20), Obj_School_toilets VARCHAR(20), Obj_Anganwadi_toilets VARCHAR(20), Obj_RSM VARCHAR(20), Obj_PC VARCHAR(20), Perf_BPL VARCHAR(20), Perf_APL VARCHAR(20), Perf_Total Varchar(20), Perf_SCW VARCHAR(20), Perf_School_toilets VARCHAR(20), Perf_Anganwadi_toilets VARCHAR(20), Perf_RSM VARCHAR(20), Perf_PC VARCHAR(20));
+
+Step 8:
+sqoop export --connect jdbc:mysql://localhost/sqoopDB --username 'root' -P --table 'DistrictMoreThan80' --export-dir 'hdfs://localhost:9000/myoutput/part-m-00000'
+
